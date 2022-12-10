@@ -1,0 +1,1 @@
+DATASET_PATH = "/media/andrea/NVMe/Dataset/ReID/Training"
