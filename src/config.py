@@ -1,1 +1,1 @@
-DATASET_PATH = "/media/andrea/NVMe/Dataset/ReID/Training"
+DATASET_PATH = "/media/andrea/20D2-63FB/Training"
