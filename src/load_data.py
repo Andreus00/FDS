@@ -3,13 +3,15 @@ import config
 import numpy as np
 import matplotlib.pyplot as plt
 from locally_binary_pattern import LocalBinaryPatterns
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sift_features import SIFTFeatures
 from skimage.feature import SIFT, match_descriptors, plot_matches
 from sklearn.svm import LinearSVC
 from skimage.color import rgb2gray
-from skimage.transform import resize
+from skimage.transform import resize, integral_image
 from skimage import filters
 from skimage.measure import find_contours
+from skimage.feature import haar_like_feature, haar_like_feature_coord, draw_haar_like_feature
 from PIL import ImageOps
 # import cv2 as cv
 
@@ -99,10 +101,19 @@ class DataLoader:
         bbox = self.extract_bbox(usmp)
         return self.desc.describe(person[bbox[0]:bbox[1], bbox[2]:bbox[3]])
 
+        
+    def extract_feature_image(self, img, feature_type, feature_coord=None):
+        ii = integral_image(img)
+        return haar_like_feature(ii, 0, 0, ii.shape[0], ii.shape[1],
+                                feature_type=feature_type,
+                                feature_coord=feature_coord)
+
+        
     def read_frame(self, frame):
         img = self.read_image(frame[0])
         skel_2d = self.read_2d_skeleton(frame[3])
-        return img, skel_2d, self.read_3d_skeleton(frame[3]), self.read_ldp(frame[2], img), self.crop_face(img, skel_2d)
+        face = self.crop_face(img, skel_2d)
+        return img, skel_2d, self.read_3d_skeleton(frame[3]), self.read_ldp(frame[2], img), face
     
     def iterate(self):
         for video in self.dataset:
@@ -135,7 +146,7 @@ class DataLoader:
             else:
                 for rect,h in zip(rects,hist):
                     rect.set_height(h)
-            plt.pause(.01)
+            plt.pause(.01)  
             plt.draw()
     
 if __name__ == "__main__":
