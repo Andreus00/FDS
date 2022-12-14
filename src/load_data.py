@@ -11,9 +11,11 @@ from skimage.color import rgb2gray
 from skimage.transform import resize, integral_image
 from skimage import filters
 from skimage.measure import find_contours
-from skimage.feature import haar_like_feature, haar_like_feature_coord, draw_haar_like_feature
+from skimage.feature import haar_like_feature, haar_like_feature_coord, draw_haar_like_feature, hog
 from PIL import ImageOps
-# import cv2 as cv
+import cv2 
+import dlib
+#import face_cascade
 
 class DataLoader:
 
@@ -113,7 +115,11 @@ class DataLoader:
         img = self.read_image(frame[0])
         skel_2d = self.read_2d_skeleton(frame[3])
         face = self.crop_face(img, skel_2d)
-        return img, skel_2d, self.read_3d_skeleton(frame[3]), self.read_ldp(frame[2], img), face
+        ld_features = self.extract_landmark_features(face)
+
+        for point in ld_features:
+            cv2.circle(face, (int(point[0]), int(point[1])), 2, (255, 0, 0), -1)
+        return img, skel_2d, self.read_3d_skeleton(frame[3]), self.read_ldp(frame[2], img), face, ld_features
     
     def iterate(self):
         for video in self.dataset:
@@ -126,11 +132,12 @@ class DataLoader:
         lbp_img = None
         rects = None
         face = None
+        face_features = []
 
         figure, axis = plt.subplots(1, 4)
         points, = axis[0].plot([], [], 'ro')
 
-        for im, skel_2d, skel_3d, lbp, face_crop in d.iterate():
+        for im, skel_2d, skel_3d, lbp, face_crop, ld in d.iterate():
             points.set_data(skel_2d[0], skel_2d[1])
             if img is None:
                 img = axis[0].imshow(im)
@@ -148,7 +155,38 @@ class DataLoader:
                     rect.set_height(h)
             plt.pause(.01)  
             plt.draw()
-    
+
+
+
+
+
+    def extract_landmark_features(self, img):
+        # Import the necessary libraries
+
+        # Load the pre-trained facial landmark detection model
+        predictor = dlib.shape_predictor('../shape_predictor_68_face_landmarks.dat')
+
+        # Load the input image and convert it to grayscale
+     
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+        # Use the predictor to detect the facial landmarks in the grayscale image
+        dets = dlib.get_frontal_face_detector()
+        
+
+        faces = dets(gray)
+        points = []    
+
+        # Loop through the detected faces and extract the landmark features
+        for face in faces:
+            shape = predictor(gray, face)
+            for i in range(shape.num_parts):
+                landmark_x = shape.part(i).x
+                landmark_y = shape.part(i).y
+                # Extract the landmark feature at this location
+                points.append((landmark_x, landmark_y))
+        return np.array(points)
+
 if __name__ == "__main__":
     d = DataLoader()
     d.read_dataset()
