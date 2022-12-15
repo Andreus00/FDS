@@ -18,7 +18,7 @@ from PIL import ImageOps
 class DataLoader:
 
     def __init__(self):
-        self.desc = LocalBinaryPatterns(24, 8)
+        self.desc = LocalBinaryPatterns(config.NUM_POINTS_LBP, config.RADIUS)
 
     def read_dataset(self):
         self.dataset = []
@@ -29,19 +29,63 @@ class DataLoader:
             vid.sort()
             self.dataset.append([(vid[i], vid[i+1], vid[i+2], vid[i+3], vid[i+4], ) for i in range(0, len(vid)-1, 5)])
         
-    
-    def shuffle_dataset(self):
+    def shuffle_videos(self):
         import random
-        blocksize = 10
         for video in self.dataset:
             # shuffle blocks
             # Create blocks
-            blocks = [video[i:i+blocksize] for i in range(0,len(video),blocksize)]
+            blocks = [video[i:i+config.BLOCKSIZE] for i in range(0,len(video),config.BLOCKSIZE)]
             # shuffle the blocks
             random.shuffle(blocks)
             # concatenate the shuffled blocks
             video[:] = [b for bs in blocks for b in bs]
+    
+    # Todo: funzione che fa un sample random da un video dato in input
 
+    def sample_dataset(self, video=None, seed = 42, return_images = False):
+        # I have to take one sample from a person and different samples from the others
+        # choose a random video:
+        images = []
+        features = np.zeros((config.BLOCKSIZE + config.BLOCKSIZE * config.NUM_SAMPLES, 9 + config.NUM_POINTS_LBP * 2))
+        y = np.asarray([1] * config.BLOCKSIZE + [0] * config.BLOCKSIZE * config.NUM_SAMPLES, dtype=np.int)
+        import random
+        random.seed(seed)
+        if video == None or video >= len(self.dataset):
+            video = random.randint(0, len(self.dataset) - 1)
+        others = []
+        i = 0
+        while i < config.NUM_SAMPLES * config.BLOCKSIZE:
+            v = random.randint(0, len(self.dataset) - 1)
+            if v == video:
+                v = v + 1 if v < len(self.dataset[v]) - 1 else v - 1
+            j = len(self.dataset[v]) - config.BLOCKSIZE - 1
+            block = self.dataset[v][j:j+config.BLOCKSIZE]
+            for frame in block:
+                feat = self.frame_to_features(frame)
+                if feat is not None:
+                    features[i + config.BLOCKSIZE,:] = feat
+                    if return_images:
+                        images.append(self.read_image(frame[0]))
+                    i += 1
+                    print(i)
+                    if i + config.BLOCKSIZE >= config.NUM_SAMPLES * config.BLOCKSIZE - 1:
+                        break
+        i = 0
+        while i < config.BLOCKSIZE:
+            j = random.randint(0, len(self.dataset[video]) - config.BLOCKSIZE - 1)      
+            
+            # ret = [self.dataset[video][j:j+config.BLOCKSIZE]] + others
+            frame = self.dataset[video][j]
+            feat = self.frame_to_features(frame)
+            if feat is not None:
+                features[i,:] = feat
+                if return_images:
+                    images.append(self.read_image(frame[0]))
+                i += 1
+                print(i)
+
+        
+        return features, y, images
 
     def read_image(self, path):
         return plt.imread(path)
@@ -73,14 +117,49 @@ class DataLoader:
             points_z.append(float(line[6]))
         skel_file.close()
         return np.array([points_x, points_y, points_z]) * 2
+
+    def process_3d_skeleton(self, skel):
+        '''
+        [[x,x,x,x,x]
+         [y,y,y,y,y]
+         [z,z,z,z,z]]
+        '''
+        bust = np.linalg.norm([np.abs(skel[0,0] - skel[0,2]), np.abs(skel[1,0] - skel[1,2]), np.abs(skel[2,0] - skel[2,2])])
+        right_upper_arm = np.linalg.norm([np.abs(skel[0,4] - skel[0,5]), np.abs(skel[1,4] - skel[1,5]), np.abs(skel[2,4] - skel[2,5])])
+        right_lower_arm = np.linalg.norm([np.abs(skel[0,6] - skel[0,5]), np.abs(skel[1,6] - skel[1,5]), np.abs(skel[2,6] - skel[2,5])])
+        left_upper_arm = np.linalg.norm([np.abs(skel[0,8] - skel[0,9]), np.abs(skel[1,8] - skel[1,9]), np.abs(skel[2,8] - skel[2,9])])
+        left_lower_arm = np.linalg.norm([np.abs(skel[0,10] - skel[0,9]), np.abs(skel[1,10] - skel[1,9]), np.abs(skel[2,10] - skel[2,9])])
+        right_upper_leg = np.linalg.norm([np.abs(skel[0,12] - skel[0,13]), np.abs(skel[1,12] - skel[1,13]), np.abs(skel[2,12] - skel[2,13])])
+        right_lower_leg = np.linalg.norm([np.abs(skel[0,14] - skel[0,13]), np.abs(skel[1,14] - skel[1,13]), np.abs(skel[2,14] - skel[2,13])])
+        left_upper_leg = np.linalg.norm([np.abs(skel[0,16] - skel[0,17]), np.abs(skel[1,16] - skel[1,17]), np.abs(skel[2,16] - skel[2,17])])
+        left_lower_leg = np.linalg.norm([np.abs(skel[0,17] - skel[0,18]), np.abs(skel[1,17] - skel[1,18]), np.abs(skel[2,17] - skel[2,18])])
+
+        return [bust, right_upper_arm, right_lower_arm, left_upper_arm, left_lower_arm, right_upper_leg, right_lower_leg, left_upper_leg, left_lower_leg]
+
+
+    def frame_to_features(self, frame):
+        '''use this to get the features from a frame'''
+        features = np.zeros((9 + config.NUM_POINTS_LBP * 2))
+        img = self.read_image(frame[0])
+        skel_2d = self.read_2d_skeleton(frame[3])
+        if len(skel_2d[0]) <= 0:
+            return None
+        face, success = self.crop_face(img, skel_2d)
+        face_lbp =  [None, None]
+        if success:
+            face_lbp = self.desc.describe(rgb2gray(face))
+        features[0:9] = self.process_3d_skeleton(self.read_3d_skeleton(frame[3]))
+        features[9:9 + config.NUM_POINTS_LBP] = self.read_lbp(frame[2], img)[1]
+        features[9 + config.NUM_POINTS_LBP:] = face_lbp[1]
+        return features
     
 
     def crop_face(self, img, skel_2d):
         if skel_2d.shape[1] < 1:
-            return img
+            return img, False
         x = skel_2d[0][2]
         y = skel_2d[1][2]
-        return img[int(y) - 100:int(y) + 30, int(x)-70:int(x) + 70, :]
+        return img[int(y) - 100:int(y) + 30, int(x)-70:int(x) + 70, :], True
     
     def extract_bbox(self, usmp): 
         contours = find_contours(usmp, 0.8)
@@ -94,26 +173,27 @@ class DataLoader:
         else:
             return 0, usmp.shape[0], 0, usmp.shape[1] # Xmin, Xmax, Ymin, Ymax
 
-    def read_ldp(self, usmp_path, img):
+    def read_lbp(self, usmp_path, img):
         usmp = self.read_image(usmp_path)
         usmp = np.pad(usmp, [(10, 0), (10, 0)], mode='constant')
         person = rgb2gray(img) * resize(usmp, (img.shape[0], img.shape[1]))
         bbox = self.extract_bbox(usmp)
         return self.desc.describe(person[bbox[0]:bbox[1], bbox[2]:bbox[3]])
 
-        
     def extract_feature_image(self, img, feature_type, feature_coord=None):
         ii = integral_image(img)
         return haar_like_feature(ii, 0, 0, ii.shape[0], ii.shape[1],
                                 feature_type=feature_type,
                                 feature_coord=feature_coord)
-
         
     def read_frame(self, frame):
         img = self.read_image(frame[0])
         skel_2d = self.read_2d_skeleton(frame[3])
-        face = self.crop_face(img, skel_2d)
-        return img, skel_2d, self.read_3d_skeleton(frame[3]), self.read_ldp(frame[2], img), face
+        face, success = self.crop_face(img, skel_2d)
+        face_lbp = None
+        if success:
+            face_lbp = self.desc.describe(rgb2gray(face))
+        return img, skel_2d, self.read_3d_skeleton(frame[3]), self.read_lbp(frame[2], img), face, face_lbp
     
     def iterate(self):
         for video in self.dataset:
@@ -126,31 +206,41 @@ class DataLoader:
         lbp_img = None
         rects = None
         face = None
+        face_rects = None
 
-        figure, axis = plt.subplots(1, 4)
+        figure, axis = plt.subplots(1, 2)
         points, = axis[0].plot([], [], 'ro')
 
-        for im, skel_2d, skel_3d, lbp, face_crop in d.iterate():
+        for im, skel_2d, skel_3d, lbp, face_crop, face_lbp in d.iterate():
             points.set_data(skel_2d[0], skel_2d[1])
+            for i, txt in enumerate(skel_2d[0]):
+                axis[0].annotate(i, (skel_2d[0][i], skel_2d[1][i]))
             if img is None:
                 img = axis[0].imshow(im)
-                lbp_img = axis[1].imshow(lbp[0])
-                face = axis[2].imshow(face_crop)
+            #     lbp_img = axis[1].imshow(lbp[0])
+            #     face = axis[2].imshow(face_crop)
             else:
                 img.set_data(im)
-                lbp_img.set_data(lbp[0])
-                face.set_data(face_crop)
-            hist = lbp[1]
-            if rects is None:
-                rects = axis[3].bar([_ for _ in range(len(hist))], hist)
-            else:
-                for rect,h in zip(rects,hist):
-                    rect.set_height(h)
-            plt.pause(.01)  
+            #     lbp_img.set_data(lbp[0])
+            #     face.set_data(face_crop)
+
+            # hist = lbp[1]
+            # if rects is None:
+            #     rects = axis[3].bar([_ for _ in range(len(hist))], hist)
+            # else:
+            #     for rect,h in zip(rects,hist):
+            #         rect.set_height(h)
+            # if face_lbp is not None:
+            #     if face_rects is None:
+            #         face_rects = axis[4].bar([_ for _ in range(len(face_lbp[1]))], face_lbp[1])
+            #     else:
+            #         for rect,h in zip(face_rects, face_lbp[1]):
+            #             rect.set_height(h)
             plt.draw()
+            plt.pause(0.01)  
     
 if __name__ == "__main__":
     d = DataLoader()
     d.read_dataset()
-    d.shuffle_dataset()
+    d.shuffle_videos()
     d.display_dataset()

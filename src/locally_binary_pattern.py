@@ -21,7 +21,7 @@ class LocalBinaryPatterns:
 		# to build the histogram of patterns
 		lbp = self.process_lbp(image, eps)
 		(hist, _) = np.histogram(lbp.ravel(),
-			bins=np.arange(0, self.numPoints + 3),
+			bins=np.arange(0, self.numPoints + 1),
 			range=(0, self.numPoints + 2))
 		# normalize the histogram
 		hist = hist.astype("float")
