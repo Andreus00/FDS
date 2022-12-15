@@ -14,6 +14,7 @@ from skimage.measure import find_contours
 from skimage.feature import haar_like_feature, haar_like_feature_coord, draw_haar_like_feature, hog
 from PIL import ImageOps
 import dlib
+import cv2
 #import face_cascade
 
 class DataLoader:
@@ -194,7 +195,7 @@ class DataLoader:
         skel_2d = self.read_2d_skeleton(frame[3])
         face, success = self.crop_face(img, skel_2d)
         ld_features = self.extract_landmark_features(face)
-        return img, skel_2d, self.read_3d_skeleton(frame[3]), self.read_ldp(frame[2], img), face, ld_features
+        return img, skel_2d, self.read_3d_skeleton(frame[3]), self.read_lbp(frame[2], img), face, ld_features
     
     def iterate(self):
         for video in self.dataset:
@@ -209,7 +210,7 @@ class DataLoader:
         face = None
         face_features = []
 
-        figure, axis = plt.subplots(1, 2)
+        figure, axis = plt.subplots(1, 3)
         points, = axis[0].plot([], [], 'ro')
         face_points, = axis[2].plot([], [], 'ro')
 
