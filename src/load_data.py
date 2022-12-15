@@ -11,9 +11,10 @@ from skimage.color import rgb2gray
 from skimage.transform import resize, integral_image
 from skimage import filters
 from skimage.measure import find_contours
-from skimage.feature import haar_like_feature, haar_like_feature_coord, draw_haar_like_feature
+from skimage.feature import haar_like_feature, haar_like_feature_coord, draw_haar_like_feature, hog
 from PIL import ImageOps
-# import cv2 as cv
+import dlib
+#import face_cascade
 
 class DataLoader:
 
@@ -148,6 +149,8 @@ class DataLoader:
         face_lbp =  [None, None]
         if success:
             face_lbp = self.desc.describe(rgb2gray(face))
+        else:
+            return None
         features[0:9] = self.process_3d_skeleton(self.read_3d_skeleton(frame[3]))
         features[9:9 + config.NUM_POINTS_LBP] = self.read_lbp(frame[2], img)[1]
         features[9 + config.NUM_POINTS_LBP:] = face_lbp[1]
@@ -190,10 +193,8 @@ class DataLoader:
         img = self.read_image(frame[0])
         skel_2d = self.read_2d_skeleton(frame[3])
         face, success = self.crop_face(img, skel_2d)
-        face_lbp = None
-        if success:
-            face_lbp = self.desc.describe(rgb2gray(face))
-        return img, skel_2d, self.read_3d_skeleton(frame[3]), self.read_lbp(frame[2], img), face, face_lbp
+        ld_features = self.extract_landmark_features(face)
+        return img, skel_2d, self.read_3d_skeleton(frame[3]), self.read_ldp(frame[2], img), face, ld_features
     
     def iterate(self):
         for video in self.dataset:
@@ -206,23 +207,25 @@ class DataLoader:
         lbp_img = None
         rects = None
         face = None
-        face_rects = None
+        face_features = []
 
         figure, axis = plt.subplots(1, 2)
         points, = axis[0].plot([], [], 'ro')
+        face_points, = axis[2].plot([], [], 'ro')
 
-        for im, skel_2d, skel_3d, lbp, face_crop, face_lbp in d.iterate():
+        for im, skel_2d, skel_3d, lbp, face_crop, ld in d.iterate():
             points.set_data(skel_2d[0], skel_2d[1])
+            face_points.set_data(ld[0], ld[1])
             for i, txt in enumerate(skel_2d[0]):
                 axis[0].annotate(i, (skel_2d[0][i], skel_2d[1][i]))
             if img is None:
                 img = axis[0].imshow(im)
             #     lbp_img = axis[1].imshow(lbp[0])
-            #     face = axis[2].imshow(face_crop)
+                face = axis[2].imshow(face_crop)
             else:
                 img.set_data(im)
             #     lbp_img.set_data(lbp[0])
-            #     face.set_data(face_crop)
+                face.set_data(face_crop)
 
             # hist = lbp[1]
             # if rects is None:
@@ -230,15 +233,39 @@ class DataLoader:
             # else:
             #     for rect,h in zip(rects,hist):
             #         rect.set_height(h)
-            # if face_lbp is not None:
-            #     if face_rects is None:
-            #         face_rects = axis[4].bar([_ for _ in range(len(face_lbp[1]))], face_lbp[1])
-            #     else:
-            #         for rect,h in zip(face_rects, face_lbp[1]):
-            #             rect.set_height(h)
             plt.draw()
             plt.pause(0.01)  
     
+
+    def extract_landmark_features(self, img):
+        # Import the necessary libraries
+
+        # Load the pre-trained facial landmark detection model
+        predictor = dlib.shape_predictor('../shape_predictor_68_face_landmarks.dat')
+
+        # Load the input image and convert it to grayscale
+     
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+        # Use the predictor to detect the facial landmarks in the grayscale image
+        dets = dlib.get_frontal_face_detector()
+        
+
+        faces = dets(gray)
+        points_x = []   
+        points_y = []    
+
+        # Loop through the detected faces and extract the landmark features
+        for face in faces:
+            shape = predictor(gray, face)
+            for i in range(shape.num_parts):
+                landmark_x = shape.part(i).x
+                landmark_y = shape.part(i).y
+                # Extract the landmark feature at this location
+                points_x.append(landmark_x)
+                points_y.append(landmark_y)
+        return np.asarray(points_x), np.asarray(points_y)
+
 if __name__ == "__main__":
     d = DataLoader()
     d.read_dataset()
