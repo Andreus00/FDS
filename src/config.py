@@ -1,4 +1,4 @@
-DATASET_PATH = "/media/andrea/20D2-63FB/Training"
+DATASET_PATH = "/media/andrea/NVMe/Dataset/ReID/Training/"
 facial_feature_types = ['type-2-x', 'type-2-y', 'type-3-x', 'type-3-y', 'type-4']
 MIN_FACE_OFFSET_X = -70
 MAX_FACE_OFFSET_X = 70

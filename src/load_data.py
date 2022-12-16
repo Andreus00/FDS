@@ -46,7 +46,7 @@ class DataLoader:
         # I have to take one sample from a person and different samples from the others
         # choose a random video:
         images = []
-        features = np.zeros((num_samples, 9 + config.NUM_POINTS_LBP * 2))
+        features = np.zeros((num_samples, 9 + config.NUM_POINTS_LBP + 12))
         import random
         random.seed(seed)
         if video >= len(self.dataset):
@@ -71,7 +71,7 @@ class DataLoader:
         # I have to take one sample from a person and different samples from the others
         # choose a random video:
         images = []
-        features = np.zeros((config.BLOCKSIZE + config.BLOCKSIZE * config.NUM_SAMPLES, 9 + config.NUM_POINTS_LBP * 2))
+        features = np.zeros((config.BLOCKSIZE + config.BLOCKSIZE * config.NUM_SAMPLES, 9 + config.NUM_POINTS_LBP + 12))
         y = np.asarray([1] * config.BLOCKSIZE + [0] * config.BLOCKSIZE * config.NUM_SAMPLES, dtype=np.int)
         import random
         random.seed(seed)
@@ -165,25 +165,29 @@ class DataLoader:
 
     def frame_to_features(self, frame):
         '''use this to get the features from a frame'''
-        features = np.zeros((9 + config.NUM_POINTS_LBP * 2))
+        features = np.zeros((9 + config.NUM_POINTS_LBP + 12))
         img = self.read_image(frame[0])
+        
         skel_2d = self.read_2d_skeleton(frame[3])
         if len(skel_2d[0]) <= 0:
             return None
         face, success = self.crop_face(img, skel_2d)
-        face_lbp =  [None, None]
+        face_features =  [None]*12
         if success:
-            face_lbp = self.desc.describe(rgb2gray(face))
+            # face_lbp = self.desc.describe(rgb2gray(face))
+            landmarks = self.extract_landmark_features(face)
+            if landmarks is not None:
+                face_features = self.process_face(landmarks)
         else:
             return None
         features[0:9] = self.process_3d_skeleton(self.read_3d_skeleton(frame[3]))
         features[9:9 + config.NUM_POINTS_LBP] = self.read_lbp(frame[2], img)[1]
-        features[9 + config.NUM_POINTS_LBP:] = face_lbp[1]
+        features[9 + config.NUM_POINTS_LBP:] = face_features
         return features
     
 
     def crop_face(self, img, skel_2d):
-        if skel_2d.shape[1] < 1:
+        if skel_2d.shape[1] < 1 or skel_2d.shape[0] < 1:
             return img, False
         x = skel_2d[0][2]
         y = skel_2d[1][2]
@@ -277,6 +281,8 @@ class DataLoader:
         
 
         faces = dets(gray)
+        if len(faces) <= 0:
+            return None
         points_x = []   
         points_y = []    
 
@@ -293,6 +299,7 @@ class DataLoader:
             #     # Extract the landmark feature at this location
             #     points_x.append(landmark_x)
             #     points_y.append(landmark_y)
+        
         return shape_np
         # return np.asarray(points_x), np.asarray(points_y)
 
