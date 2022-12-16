@@ -272,11 +272,18 @@ class DataLoader:
 
         eyes_lenght = np.linalg.norm(face[36] - face[39])
         eyes_width = np.linalg.norm(face[37] - face[38])
-        nose = np.linalg.norm(face[30] - face[33])
-        mouth = np.linalg.norm(face[48] - face[54])
+        nose_heigth = np.linalg.norm(face[30] - face[33])
+        nose_width = np.linalg.norm(face[31] - face[35])
+        mouth_width = np.linalg.norm(face[48] - face[54])
+        mouth_height = np.linalg.norm(face[51] - face[57])
         chin= np.linalg.norm(face[8] - face[33])
+        face_width = np.linalg.norm(face[0] - face[16])
+        face_height = np.linalg.norm(face[8] - face[27])
+        distance_nose_mouth = np.linalg.norm(face[33] - face[51])
+        distance_mouth_chin = np.linalg.norm(face[57] - face[8])
+        distance_between_eyes = np.linalg.norm(face[39] - face[42])
 
-        return [eyes_lenght, eyes_width, nose, mouth, chin]
+        return [eyes_lenght, eyes_width, nose_heigth, nose_width, mouth_width, mouth_height, chin, face_width, face_height, distance_nose_mouth, distance_mouth_chin, distance_between_eyes]
 
 
 
