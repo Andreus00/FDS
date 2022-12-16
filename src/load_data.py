@@ -260,13 +260,17 @@ class DataLoader:
         for face in faces:
             shape = predictor(gray, face)
             #use the np array?
-            for i in range(shape.num_parts):
-                landmark_x = shape.part(i).x
-                landmark_y = shape.part(i).y
-                # Extract the landmark feature at this location
-                points_x.append(landmark_x)
-                points_y.append(landmark_y)
-        return np.asarray(points_x), np.asarray(points_y)
+            shape_np = np.zeros((68, 2), dtype="int")
+            for i in range(0, 68):
+                 shape_np[i] = (shape.part(i).x, shape.part(i).y)
+            # for i in range(shape.num_parts):
+            #     landmark_x = shape.part(i).x
+            #     landmark_y = shape.part(i).y
+            #     # Extract the landmark feature at this location
+            #     points_x.append(landmark_x)
+            #     points_y.append(landmark_y)
+        return shape_np
+        # return np.asarray(points_x), np.asarray(points_y)
 
     def process_face(self, face):
 
