@@ -67,7 +67,7 @@ class DataLoader:
 
     # Todo: funzione che fa un sample random da un video dato in input
 
-    def sample_dataset(self, video=None, seed = 42, return_images = False):
+    def sample_dataset(self, video=None, seed = 42, return_images = False, file=None):
         # I have to take one sample from a person and different samples from the others
         # choose a random video:
         images = []
@@ -108,10 +108,10 @@ class DataLoader:
                     images.append(self.read_image(frame[0]))
                 i += 1
                 print(i)
-        if return_images:
-            return features, y, images
-        else:
-            return features, y
+        if file is not None:
+            np.save(config.SAMPLED_PATH + file + "_X.npy", features)
+            np.save(config.SAMPLED_PATH + file + "_y.npy", y)
+        return features, y, images
 
     def read_image(self, path):
         return plt.imread(path)
@@ -175,9 +175,12 @@ class DataLoader:
         face_features =  [None]*12
         if success:
             # face_lbp = self.desc.describe(rgb2gray(face))
-            landmarks = self.extract_landmark_features(face)
-            if landmarks is not None:
-                face_features = self.process_face(landmarks)
+            try:
+                landmarks = self.extract_landmark_features(face)
+                if landmarks is not None:
+                    face_features = self.process_face(landmarks)
+            except cv2.error as e:
+                pass
         else:
             return None
         features[0:9] = self.process_3d_skeleton(self.read_3d_skeleton(frame[3]))
@@ -293,15 +296,8 @@ class DataLoader:
             shape_np = np.zeros((68, 2), dtype="int")
             for i in range(0, 68):
                  shape_np[i] = (shape.part(i).x, shape.part(i).y)
-            # for i in range(shape.num_parts):
-            #     landmark_x = shape.part(i).x
-            #     landmark_y = shape.part(i).y
-            #     # Extract the landmark feature at this location
-            #     points_x.append(landmark_x)
-            #     points_y.append(landmark_y)
         
         return shape_np
-        # return np.asarray(points_x), np.asarray(points_y)
 
     def process_face(self, face):
 
