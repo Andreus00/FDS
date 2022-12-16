@@ -259,6 +259,7 @@ class DataLoader:
         # Loop through the detected faces and extract the landmark features
         for face in faces:
             shape = predictor(gray, face)
+            #use the np array?
             for i in range(shape.num_parts):
                 landmark_x = shape.part(i).x
                 landmark_y = shape.part(i).y
@@ -266,6 +267,18 @@ class DataLoader:
                 points_x.append(landmark_x)
                 points_y.append(landmark_y)
         return np.asarray(points_x), np.asarray(points_y)
+
+    def process_face(self, face):
+
+        eyes_lenght = np.linalg.norm(face[36] - face[39])
+        eyes_width = np.linalg.norm(face[37] - face[38])
+        nose = np.linalg.norm(face[30] - face[33])
+        mouth = np.linalg.norm(face[48] - face[54])
+        chin= np.linalg.norm(face[8] - face[33])
+
+        return [eyes_lenght, eyes_width, nose, mouth, chin]
+
+
 
 if __name__ == "__main__":
     d = DataLoader()
