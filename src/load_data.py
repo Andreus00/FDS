@@ -283,13 +283,37 @@ class DataLoader:
         # Loop through the detected faces and extract the landmark features
         for face in faces:
             shape = predictor(gray, face)
-            for i in range(shape.num_parts):
-                landmark_x = shape.part(i).x
-                landmark_y = shape.part(i).y
-                # Extract the landmark feature at this location
-                points_x.append(landmark_x)
-                points_y.append(landmark_y)
-        return np.asarray(points_x), np.asarray(points_y)
+            #use the np array?
+            shape_np = np.zeros((68, 2), dtype="int")
+            for i in range(0, 68):
+                 shape_np[i] = (shape.part(i).x, shape.part(i).y)
+            # for i in range(shape.num_parts):
+            #     landmark_x = shape.part(i).x
+            #     landmark_y = shape.part(i).y
+            #     # Extract the landmark feature at this location
+            #     points_x.append(landmark_x)
+            #     points_y.append(landmark_y)
+        return shape_np
+        # return np.asarray(points_x), np.asarray(points_y)
+
+    def process_face(self, face):
+
+        eyes_lenght = np.linalg.norm(face[36] - face[39])
+        eyes_width = np.linalg.norm(face[37] - face[38])
+        nose_heigth = np.linalg.norm(face[30] - face[33])
+        nose_width = np.linalg.norm(face[31] - face[35])
+        mouth_width = np.linalg.norm(face[48] - face[54])
+        mouth_height = np.linalg.norm(face[51] - face[57])
+        chin= np.linalg.norm(face[8] - face[33])
+        face_width = np.linalg.norm(face[0] - face[16])
+        face_height = np.linalg.norm(face[8] - face[27])
+        distance_nose_mouth = np.linalg.norm(face[33] - face[51])
+        distance_mouth_chin = np.linalg.norm(face[57] - face[8])
+        distance_between_eyes = np.linalg.norm(face[39] - face[42])
+
+        return [eyes_lenght, eyes_width, nose_heigth, nose_width, mouth_width, mouth_height, chin, face_width, face_height, distance_nose_mouth, distance_mouth_chin, distance_between_eyes]
+
+
 
 if __name__ == "__main__":
     d = DataLoader()
