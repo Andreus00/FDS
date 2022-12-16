@@ -42,6 +42,29 @@ class DataLoader:
             # concatenate the shuffled blocks
             video[:] = [b for bs in blocks for b in bs]
     
+    def sample_video(self, video=0, seed = 42, return_images = False, num_samples=50):
+        # I have to take one sample from a person and different samples from the others
+        # choose a random video:
+        images = []
+        features = np.zeros((num_samples, 9 + config.NUM_POINTS_LBP * 2))
+        import random
+        random.seed(seed)
+        if video >= len(self.dataset):
+            video = random.randint(0, len(self.dataset) - 1)
+        i = 0
+        while i < num_samples:
+            j = random.randint(0, len(self.dataset[video]) - 1)      
+            frame = self.dataset[video][j]
+            feat = self.frame_to_features(frame)
+            if feat is not None:
+                features[i,:] = feat
+                if return_images:
+                    images.append(self.read_image(frame[0]))
+                i += 1
+                print(i)
+        return features, images
+
+
     # Todo: funzione che fa un sample random da un video dato in input
 
     def sample_dataset(self, video=None, seed = 42, return_images = False):
@@ -85,9 +108,10 @@ class DataLoader:
                     images.append(self.read_image(frame[0]))
                 i += 1
                 print(i)
-
-        
-        return features, y, images
+        if return_images:
+            return features, y, images
+        else:
+            return features, y
 
     def read_image(self, path):
         return plt.imread(path)
