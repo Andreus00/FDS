@@ -162,8 +162,9 @@ if __name__ == "__main__":
             #     plt.show()
     
     if GENERATE_DATASET:
-        for i in range(0, 50):
-            d.sample_dataset(video=vid, return_images=True, file="sample_"+str(i), seed=i)
+        for i in range(2, 50):
+            for j in range(2):
+                d.sample_dataset(video=i, return_images=True, file=f"video{j}sample_{i}", seed=i + j)
 
 
 
