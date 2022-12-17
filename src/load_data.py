@@ -248,7 +248,7 @@ class DataLoader:
         face = None
         face_features = []
 
-        figure, axis = plt.subplots(1, 5)
+        figure, axis = plt.subplots(1, 4)
         figure.set_size_inches(18.5, 10.5)
         points, = axis[0].plot([], [], 'ro')
         face_points, = axis[3].plot([], [], 'ro')
