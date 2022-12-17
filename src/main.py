@@ -19,9 +19,9 @@ import matplotlib.pyplot as plt
 
 
 if __name__ == "__main__":
-    CLASSIFY = True
+    CLASSIFY = False
     REGRESS = False
-    GENERATE_DATASET = False
+    GENERATE_DATASET = True
     vid = 1
     # classifiers
     models = [(str(model), model) for model in [DecisionTreeClassifier, RandomForestClassifier, KNeighborsClassifier, LogisticRegression, GaussianNB, SVC]]
@@ -163,7 +163,7 @@ if __name__ == "__main__":
     
     if GENERATE_DATASET:
         for i in range(0, 50):
-            d.sample_dataset(video=vid, return_images=True, file="sample_"+str(i))
+            d.sample_dataset(video=vid, return_images=True, file="sample_"+str(i), seed=i)
 
 
 
