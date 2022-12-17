@@ -5,3 +5,4 @@ dlib
 opencv-contrib-python
 numpy
 tqdm
+imutils
