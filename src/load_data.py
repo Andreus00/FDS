@@ -24,12 +24,15 @@ class DataLoader:
 
     def read_dataset(self):
         self.dataset = []
-        for folder in os.listdir(config.DATASET_PATH):
+        dirs =  os.listdir(config.DATASET_PATH)
+        dirs.sort()
+        for folder in dirs:
             vid = []
             for file in os.listdir(os.path.join(config.DATASET_PATH, folder)):
                 vid.append(os.path.join(config.DATASET_PATH, folder, file))
             vid.sort()
             self.dataset.append([(vid[i], vid[i+1], vid[i+2], vid[i+3], vid[i+4], ) for i in range(0, len(vid)-1, 5)])
+        # print(self.dataset)
         
     def shuffle_videos(self):
         import random
@@ -86,7 +89,7 @@ class DataLoader:
 
             count = 0
             while count < config.BLOCKSIZE:
-                j = len(self.dataset[v]) - 1
+                j = random.randint(0, len(self.dataset[v]) - 1)
                 frame = self.dataset[v][j]
                 feat = self.frame_to_features(frame)
                 if feat is not None:
@@ -94,11 +97,10 @@ class DataLoader:
                     if return_images:
                         images.append(self.read_image(frame[0]))
                     i += 1
-                    print(i)
+                    print(i, frame[0])
                     if i + config.BLOCKSIZE >= config.NUM_SAMPLES * config.BLOCKSIZE - 1:
                         break
-
-                count += 1
+                    count += 1
                 
         i = 0
         while i < config.BLOCKSIZE:
@@ -110,9 +112,9 @@ class DataLoader:
             if feat is not None:
                 features[i,:] = feat
                 if return_images:
-                    images.append(self.read_image(frame[0]))
+                    images.insert(i, self.read_image(frame[0]))
                 i += 1
-                print(i, "chosen frame", j)
+                print(i, "chosen frame", j, "from", frame[0])
         if file is not None:
             np.save(config.SAMPLED_PATH + file + "_X.npy", features)
             np.save(config.SAMPLED_PATH + file + "_y.npy", y)
