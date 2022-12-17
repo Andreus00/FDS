@@ -234,51 +234,57 @@ class DataLoader:
                 yield self.read_frame(frame)
 
 
-    def display_dataset(self):
+    def display_dataset(self, limit = 1):
         img = None
         lbp_img = None
         rects = None
         face = None
         face_features = []
 
-        figure, axis = plt.subplots(1, 3)
+        figure, axis = plt.subplots(1, 5)
+        figure.set_size_inches(18.5, 10.5)
         points, = axis[0].plot([], [], 'ro')
-        face_points, = axis[2].plot([], [], 'ro')
-
-        for im, skel_2d, skel_3d, lbp, face_crop, ld in d.iterate():
+        face_points, = axis[3].plot([], [], 'ro')
+        count = 0
+        for im, skel_2d, skel_3d, lbp, face_crop, ld in self.iterate():
+            if count >= limit:
+                break
             points.set_data(skel_2d[0], skel_2d[1])
-            face_points.set_data(ld[0], ld[1])
+            if ld is not None:
+                face_points.set_data(ld[:, 0], ld[:, 1])
             for i, txt in enumerate(skel_2d[0]):
                 axis[0].annotate(i, (skel_2d[0][i], skel_2d[1][i]))
             if img is None:
                 img = axis[0].imshow(im)
-            #     lbp_img = axis[1].imshow(lbp[0])
-                face = axis[2].imshow(face_crop)
+                lbp_img = axis[1].imshow(lbp[0])
+                face = axis[3].imshow(face_crop)
             else:
                 img.set_data(im)
-            #     lbp_img.set_data(lbp[0])
+                lbp_img.set_data(lbp[0])
                 face.set_data(face_crop)
 
-            # hist = lbp[1]
-            # if rects is None:
-            #     rects = axis[3].bar([_ for _ in range(len(hist))], hist)
-            # else:
-            #     for rect,h in zip(rects,hist):
-            #         rect.set_height(h)
+            hist = lbp[1]
+            if rects is None:
+                rects = axis[2].bar([_ for _ in range(len(hist))], hist)
+            else:
+                for rect,h in zip(rects,hist):
+                    rect.set_height(h)
             plt.draw()
             plt.pause(0.01)  
+            count += 1
     
 
     def extract_landmark_features(self, img):
         # Import the necessary libraries
-
+        
         # Load the pre-trained facial landmark detection model
         predictor = dlib.shape_predictor('../shape_predictor_68_face_landmarks.dat')
 
         # Load the input image and convert it to grayscale
      
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+        gray = clahe.apply(gray)
         # Use the predictor to detect the facial landmarks in the grayscale image
         dets = dlib.get_frontal_face_detector()
         
@@ -290,10 +296,10 @@ class DataLoader:
         points_y = []    
 
         # Loop through the detected faces and extract the landmark features
+        shape_np = np.zeros((68, 2), dtype="int")
         for face in faces:
             shape = predictor(gray, face)
             #use the np array?
-            shape_np = np.zeros((68, 2), dtype="int")
             for i in range(0, 68):
                  shape_np[i] = (shape.part(i).x, shape.part(i).y)
         

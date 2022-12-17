@@ -3,7 +3,7 @@ from sklearn.svm import SVR
 
 from load_data import DataLoader
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import classification_report, mean_absolute_error, mean_squared_error
+from sklearn.metrics import classification_report, mean_absolute_error, mean_squared_error, roc_auc_score, roc_curve
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.neighbors import KNeighborsClassifier
@@ -18,47 +18,13 @@ import math
 import matplotlib.pyplot as plt
 
 
-def filter_and_split_dataset(X, y):
-    X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y)
-    X_skel = X_train[:, 0:9]
-    X_clothes = X_train[:, 9:9 + config.NUM_POINTS_LBP]
-    X_face_not_filtered = X_train[:, 9 + config.NUM_POINTS_LBP:]
-    X_face = []
-    y_face = []
-    for X_f, y_f in zip(X_face_not_filtered, y_train):
-        if not math.isnan(X_f[0]):
-            X_face.append(X_f)
-            y_face.append(y_f)
-
-    X_face = np.asarray(X_face)
-    y_face = np.asarray(y_face).flatten()
-    
-    X_skel_test = X_test[:, 0:9]
-    X_clothes_test = X_test[:, 9:9 + config.NUM_POINTS_LBP]
-    X_face_test_not_filtered = X_test[:, 9 + config.NUM_POINTS_LBP:]
-
-
-    X_face_test = []
-    y_face_test = []
-    for X_f, y_f in zip(X_face_test_not_filtered, y_test):
-        if not math.isnan(X_f[0]):
-            X_face_test.append(X_f)
-            y_face_test.append(y_f)
-    
-    X_face_test = np.asarray(X_face_test)
-    y_face_test = np.asarray(y_face_test).flatten()
-
-    y = np.array(y_train).flatten()
-
-    return X_skel, X_clothes, X_face, X_skel_test, X_clothes_test, X_face_test, y_train, y_test, y_face, y_face_test
-
 if __name__ == "__main__":
     CLASSIFY = True
     REGRESS = False
     GENERATE_DATASET = False
     vid = 1
     # classifiers
-    models = [(str(model), model(), model(), model()) for model in [DecisionTreeClassifier, RandomForestClassifier, KNeighborsClassifier, LogisticRegression, GaussianNB, SVC]]
+    models = [(str(model), model) for model in [DecisionTreeClassifier, RandomForestClassifier, KNeighborsClassifier, LogisticRegression, GaussianNB, SVC]]
     regressors = [(str(model), model) for model in [LinearRegression, Pipeline, SVR, SVR, SVR]]
     # get dataset
 
@@ -72,12 +38,23 @@ if __name__ == "__main__":
         images = []
         X_skel, X_clothes, X_face, X_skel_test, X_clothes_test, X_face_test, y_train, y_test, y_face, y_face_test = filter_and_split_dataset(X, y)
 
+        roc = []
+        auc = []
+
         # fit  and predict models
-        for name, model_skel, model_clothes, model_face in models:
+        for name, m in models:
+            if m is SVC:
+                model_skel, model_clothes, model_face = m(kernel="poly", degree=4), m(kernel="poly", degree=4), m(kernel="poly", degree=4)
+            else:
+                model_skel, model_clothes, model_face = m(), m(), m()
             if model_skel is LogisticRegression:
                 model_skel.fit(X_skel, y_train, max_iter=10000)
                 model_clothes.fit(X_clothes, y_train, max_iter=10000)
                 model_face.fit(X_face, y_face, max_iter=10000)
+            elif model_skel is SVC:
+                model_skel.fit(X_skel, y_train)
+                model_clothes.fit(X_clothes, y_train)
+                model_face.fit(X_face, y_face)
             else:
                 model_skel.fit(X_skel, y_train)
                 model_clothes.fit(X_clothes, y_train)
