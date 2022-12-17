@@ -83,9 +83,11 @@ class DataLoader:
             v = random.randint(0, len(self.dataset) - 1)
             if v == video:
                 v = v + 1 if v < len(self.dataset[v]) - 1 else v - 1
-            j = len(self.dataset[v]) - config.BLOCKSIZE - 1
-            block = self.dataset[v][j:j+config.BLOCKSIZE]
-            for frame in block:
+
+            count = 0
+            while count < config.BLOCKSIZE:
+                j = len(self.dataset[v]) - 1
+                frame = self.dataset[v][j]
                 feat = self.frame_to_features(frame)
                 if feat is not None:
                     features[i + config.BLOCKSIZE,:] = feat
@@ -95,9 +97,12 @@ class DataLoader:
                     print(i)
                     if i + config.BLOCKSIZE >= config.NUM_SAMPLES * config.BLOCKSIZE - 1:
                         break
+
+                count += 1
+                
         i = 0
         while i < config.BLOCKSIZE:
-            j = random.randint(0, len(self.dataset[video]) - config.BLOCKSIZE - 1)      
+            j = random.randint(0, len(self.dataset[video]) - 1)      
             
             # ret = [self.dataset[video][j:j+config.BLOCKSIZE]] + others
             frame = self.dataset[video][j]
@@ -107,7 +112,7 @@ class DataLoader:
                 if return_images:
                     images.append(self.read_image(frame[0]))
                 i += 1
-                print(i)
+                print(i, "chosen frame", j)
         if file is not None:
             np.save(config.SAMPLED_PATH + file + "_X.npy", features)
             np.save(config.SAMPLED_PATH + file + "_y.npy", y)
