@@ -164,7 +164,7 @@ if __name__ == "__main__":
     if GENERATE_DATASET:
         for i in range(0, 50):
             for j in range(2):
-                d.sample_dataset(video=i, return_images=True, file=f"video{i}sample_{j}", seed=j)
+                d.sample_dataset(video=i, return_images=True, file=f"video_{i}_sample_{j}", seed=j)
 
 
 
