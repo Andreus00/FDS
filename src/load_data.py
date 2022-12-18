@@ -290,7 +290,7 @@ class DataLoader:
         # Load the input image and convert it to grayscale
      
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
         gray = clahe.apply(gray)
         # Use the predictor to detect the facial landmarks in the grayscale image
         dets = dlib.get_frontal_face_detector()
