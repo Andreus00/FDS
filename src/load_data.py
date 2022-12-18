@@ -269,7 +269,6 @@ class DataLoader:
                 img.set_data(im)
                 lbp_img.set_data(lbp[0])
                 face.set_data(face_crop)
-
             hist = lbp[1]
             if rects is None:
                 rects = axis[2].bar([_ for _ in range(len(hist))], hist)
