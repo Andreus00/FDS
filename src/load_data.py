@@ -236,6 +236,7 @@ class DataLoader:
         return img, skel_2d, self.read_3d_skeleton(frame[3]), self.read_lbp(frame[2], img), face, ld_features
     
     def iterate(self):
+        return self.read_frame(self.dataset[40][random.randint(0, len(self.dataset[40]) - 1)])
         for video in self.dataset:
             for frame in video:
                 yield self.read_frame(frame)
