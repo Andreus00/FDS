@@ -236,7 +236,6 @@ class DataLoader:
         return img, skel_2d, self.read_3d_skeleton(frame[3]), self.read_lbp(frame[2], img), face, ld_features
     
     def iterate(self):
-        return self.read_frame(self.dataset[40][random.randint(0, len(self.dataset[40]) - 1)])
         for video in self.dataset:
             for frame in video:
                 yield self.read_frame(frame)
@@ -249,8 +248,9 @@ class DataLoader:
         face = None
         face_features = []
 
-        figure, axis = plt.subplots(1, 4)
-        figure.set_size_inches(18.5, 10.5)
+        figure, axis = plt.subplots(1, 4,figsize=(18.5, 10.5), gridspec_kw={'width_ratios': [1, 0.3, 0.8, 1]})
+        
+        # figure.set_size_inches(18.5, 10.5)
         points, = axis[0].plot([], [], 'ro')
         face_points, = axis[3].plot([], [], 'ro')
         count = 0
@@ -272,7 +272,7 @@ class DataLoader:
                 face.set_data(face_crop)
             hist = lbp[1]
             if rects is None:
-                rects = axis[2].bar([_ for _ in range(len(hist))], hist)
+                rects = axis[2].bar([_ for _ in range(len(hist) - 1)], hist[:-1])
             else:
                 for rect,h in zip(rects,hist):
                     rect.set_height(h)
