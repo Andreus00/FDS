@@ -172,22 +172,25 @@ class DataLoader:
 
     def frame_to_features(self, frame):
         '''use this to get the features from a frame'''
-        features = np.zeros((9 + config.NUM_POINTS_LBP + 12))
+        num_face_features = 40 if config.LDP_FOR_FACE else 12
+        features = np.zeros((9 + config.NUM_POINTS_LBP + num_face_features))
         img = self.read_image(frame[0])
         
         skel_2d = self.read_2d_skeleton(frame[3])
         if len(skel_2d[0]) <= 0:
             return None
         face, success = self.crop_face(img, skel_2d)
-        face_features =  [None]*12
+        face_features =  [None]*num_face_features
         if success:
-            # face_lbp = self.desc.describe(rgb2gray(face))
-            try:
-                landmarks = self.extract_landmark_features(face)
-                if landmarks is not None:
-                    face_features = self.process_face(landmarks)
-            except cv2.error as e:
-                pass
+            if config.LDP_FOR_FACE:
+                face_features = self.desc.describe(rgb2gray(face))[1]
+            else:
+                try:
+                    landmarks = self.extract_landmark_features(face)
+                    if landmarks is not None:
+                        face_features = self.process_face(landmarks)
+                except cv2.error as e:
+                    pass
         else:
             return None
         features[0:9] = self.process_3d_skeleton(self.read_3d_skeleton(frame[3]))
