@@ -1,4 +1,4 @@
-# FDS
+# Person Re-identification with hand-crafted features
 
 Project for the FDS course.
 
