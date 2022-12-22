@@ -251,28 +251,29 @@ class DataLoader:
         face = None
         face_features = []
 
-        figure, axis = plt.subplots(1, 4,figsize=(18.5, 10.5), gridspec_kw={'width_ratios': [1, 0.3, 0.8, 1]})
+        figure, axis = plt.subplots(1, 3,figsize=(18.5, 10.5), gridspec_kw={'width_ratios': [1, 0.3, 0.8]})
         
         # figure.set_size_inches(18.5, 10.5)
         points, = axis[0].plot([], [], 'ro')
-        face_points, = axis[3].plot([], [], 'ro')
+        # face_points, = axis[3].plot([], [], 'ro')
         count = 0
         for im, skel_2d, skel_3d, lbp, face_crop, ld in self.iterate():
             if count >= limit:
                 break
             points.set_data(skel_2d[0], skel_2d[1])
             if ld is not None:
-                face_points.set_data(ld[:, 0], ld[:, 1])
+                # fac_points.set_data(ld[:, 0], ld[:, 1])
+                pass
             for i, txt in enumerate(skel_2d[0]):
                 axis[0].annotate(i, (skel_2d[0][i], skel_2d[1][i]))
             if img is None:
                 img = axis[0].imshow(im)
                 lbp_img = axis[1].imshow(lbp[0])
-                face = axis[3].imshow(face_crop)
+                # face = axis[3].imshow(face_crop)
             else:
                 img.set_data(im)
                 lbp_img.set_data(lbp[0])
-                face.set_data(face_crop)
+                # face.set_data(face_crop)
             hist = lbp[1]
             if rects is None:
                 rects = axis[2].bar([_ for _ in range(len(hist) - 1)], hist[:-1])
@@ -297,10 +298,10 @@ class DataLoader:
         gray = clahe.apply(gray)
         # Use the predictor to detect the facial landmarks in the grayscale image
         dets = dlib.get_frontal_face_detector()
-        
 
         faces = dets(gray)
         if len(faces) <= 0:
+            print("No face detected")
             return None
         points_x = []   
         points_y = []    
