@@ -11,6 +11,7 @@ from sklearn.linear_model import LogisticRegression, LinearRegression, Lasso
 from sklearn.naive_bayes import GaussianNB
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import PolynomialFeatures
+from utils import filter_and_split_dataset
 import numpy as np
 import tqdm
 import config
@@ -162,7 +163,7 @@ if __name__ == "__main__":
             #     plt.show()
     
     if GENERATE_DATASET:
-        for i in range(2, 50):
+        for i in range(7, 50):
             for j in range(0, 2):
                 d.sample_dataset(video=i, return_images=True, file=f"video_{i}_sample_{j}", seed=j)
 

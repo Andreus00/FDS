@@ -15,7 +15,6 @@ from skimage.feature import haar_like_feature, haar_like_feature_coord, draw_haa
 from PIL import ImageOps
 import dlib
 import cv2
-#import face_cascade
 
 class DataLoader:
 
