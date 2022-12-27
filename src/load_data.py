@@ -156,7 +156,7 @@ class DataLoader:
          [y,y,y,y,y]
          [z,z,z,z,z]]
         '''
-        bust = np.linalg.norm([np.abs(skel[0,0] - skel[0,2]), np.abs(skel[1,0] - skel[1,2]), np.abs(skel[2,0] - skel[2,2])])
+        chest = np.linalg.norm([np.abs(skel[0,0] - skel[0,2]), np.abs(skel[1,0] - skel[1,2]), np.abs(skel[2,0] - skel[2,2])])
         right_upper_arm = np.linalg.norm([np.abs(skel[0,4] - skel[0,5]), np.abs(skel[1,4] - skel[1,5]), np.abs(skel[2,4] - skel[2,5])])
         right_lower_arm = np.linalg.norm([np.abs(skel[0,6] - skel[0,5]), np.abs(skel[1,6] - skel[1,5]), np.abs(skel[2,6] - skel[2,5])])
         left_upper_arm = np.linalg.norm([np.abs(skel[0,8] - skel[0,9]), np.abs(skel[1,8] - skel[1,9]), np.abs(skel[2,8] - skel[2,9])])
@@ -166,7 +166,7 @@ class DataLoader:
         left_upper_leg = np.linalg.norm([np.abs(skel[0,16] - skel[0,17]), np.abs(skel[1,16] - skel[1,17]), np.abs(skel[2,16] - skel[2,17])])
         left_lower_leg = np.linalg.norm([np.abs(skel[0,17] - skel[0,18]), np.abs(skel[1,17] - skel[1,18]), np.abs(skel[2,17] - skel[2,18])])
 
-        return [bust, right_upper_arm, right_lower_arm, left_upper_arm, left_lower_arm, right_upper_leg, right_lower_leg, left_upper_leg, left_lower_leg]
+        return [chest, right_upper_arm, right_lower_arm, left_upper_arm, left_lower_arm, right_upper_leg, right_lower_leg, left_upper_leg, left_lower_leg]
 
 
     def frame_to_features(self, frame):
