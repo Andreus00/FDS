@@ -73,7 +73,7 @@ class DataLoader:
         # I have to take one sample from a person and different samples from the others
         # choose a random video:
         images = []
-        features = np.zeros((config.BLOCKSIZE + config.BLOCKSIZE * config.NUM_SAMPLES, 9 + config.NUM_POINTS_LBP + 12))
+        features = np.zeros((config.BLOCKSIZE + config.BLOCKSIZE * config.NUM_SAMPLES, 9 + config.NUM_POINTS_LBP + config.NUM_POINTS_LBP))
         y = np.asarray([1] * config.BLOCKSIZE + [0] * config.BLOCKSIZE * config.NUM_SAMPLES, dtype=np.int)
         import random
         random.seed(seed)
@@ -171,7 +171,7 @@ class DataLoader:
 
     def frame_to_features(self, frame):
         '''use this to get the features from a frame'''
-        num_face_features = 40 if config.LDP_FOR_FACE else 12
+        num_face_features = config.NUM_POINTS_LBP
         features = np.zeros((9 + config.NUM_POINTS_LBP + num_face_features))
         img = self.read_image(frame[0])
         
@@ -181,15 +181,8 @@ class DataLoader:
         face, success = self.crop_face(img, skel_2d)
         face_features =  [None]*num_face_features
         if success:
-            if config.LDP_FOR_FACE:
-                face_features = self.desc.describe(rgb2gray(face))[1]
-            else:
-                try:
-                    landmarks = self.extract_landmark_features(face)
-                    if landmarks is not None:
-                        face_features = self.process_face(landmarks)
-                except cv2.error as e:
-                    pass
+            # print("face shape: ", face.shape)
+            face_features = self.desc.describe(rgb2gra,y(face))[1]
         else:
             return None
         features[0:9] = self.process_3d_skeleton(self.read_3d_skeleton(frame[3]))
@@ -202,10 +195,12 @@ class DataLoader:
         if skel_2d.shape[1] < 1 or skel_2d.shape[0] < 1:
             return img, False
         x = skel_2d[0][2]
-        y = skel_2d[1][2]
-        return img[int(y) - 100:int(y) + 30, int(x)-70:int(x) + 70, :], True
+        y = skel_2d[1][2]        
+        if x + config.X_POSITIVE_OFFSET > img.shape[1] or x + config.X_NEGATIVE_OFFSET < 0 or y + config.Y_POSITIVE_OFFSET > img.shape[0] or y + config.Y_NEGATIVE_OFFSET < 0:
+            return img, False
+        return img[int(y) + config.Y_NEGATIVE_OFFSET:int(y) + config.Y_POSITIVE_OFFSET, int(x) + config.X_NEGATIVE_OFFSET:int(x) + config.X_POSITIVE_OFFSET, :], True
     
-    def extract_bbox(self, usmp): 
+    def extract_bbox(self, usmp):
         contours = find_contours(usmp, 0.8)
         if len(contours) > 0:
             contour = contours[0]
@@ -234,7 +229,11 @@ class DataLoader:
         img = self.read_image(frame[0])
         skel_2d = self.read_2d_skeleton(frame[3])
         face, success = self.crop_face(img, skel_2d)
-        ld_features = self.extract_landmark_features(face)
+        if success:
+            ld_features = self.desc.describe(rgb2gray(face))
+        else:
+            ld_features = np.zeros(shape=(config.NUM_POINTS_LBP,))
+        # ld_features = self.desc.describe(rgb2gray(face))# self.extract_landmark_features(face)
         return img, skel_2d, self.read_3d_skeleton(frame[3]), self.read_lbp(frame[2], img), face, ld_features
     
     def iterate(self):
