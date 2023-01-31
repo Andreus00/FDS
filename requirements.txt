@@ -6,3 +6,4 @@ opencv-contrib-python
 numpy
 tqdm
 imutils
+mediapipe

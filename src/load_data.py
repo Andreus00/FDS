@@ -15,6 +15,7 @@ from skimage.feature import haar_like_feature, haar_like_feature_coord, draw_haa
 from PIL import ImageOps
 import dlib
 import cv2
+import face
 
 class DataLoader:
 
@@ -182,7 +183,7 @@ class DataLoader:
         face_features =  [None]*num_face_features
         if success:
             # print("face shape: ", face.shape)
-            face_features = self.desc.describe(rgb2gra,y(face))[1]
+            face_features = self.desc.describe(rgb2gray(face))[1]
         else:
             return None
         features[0:9] = self.process_3d_skeleton(self.read_3d_skeleton(frame[3]))
@@ -192,13 +193,26 @@ class DataLoader:
     
 
     def crop_face(self, img, skel_2d):
-        if skel_2d.shape[1] < 1 or skel_2d.shape[0] < 1:
-            return img, False
-        x = skel_2d[0][2]
-        y = skel_2d[1][2]        
-        if x + config.X_POSITIVE_OFFSET > img.shape[1] or x + config.X_NEGATIVE_OFFSET < 0 or y + config.Y_POSITIVE_OFFSET > img.shape[0] or y + config.Y_NEGATIVE_OFFSET < 0:
-            return img, False
-        return img[int(y) + config.Y_NEGATIVE_OFFSET:int(y) + config.Y_POSITIVE_OFFSET, int(x) + config.X_NEGATIVE_OFFSET:int(x) + config.X_POSITIVE_OFFSET, :], True
+        # if skel_2d.shape[1] < 1 or skel_2d.shape[0] < 1:
+        #     return img, False
+        # x = skel_2d[0][2]
+        # y = skel_2d[1][2]        
+        # if x + config.X_POSITIVE_OFFSET > img.shape[1] or x + config.X_NEGATIVE_OFFSET < 0 or y + config.Y_POSITIVE_OFFSET > img.shape[0] or y + config.Y_NEGATIVE_OFFSET < 0:
+        #     return img, False
+        # return img[int(y) + config.Y_NEGATIVE_OFFSET:int(y) + config.Y_POSITIVE_OFFSET, int(x) + config.X_NEGATIVE_OFFSET:int(x) + config.X_POSITIVE_OFFSET, :], True
+        # dets = dlib.get_frontal_face_detector()
+        # gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        # clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
+        # gray = clahe.apply(gray)
+        # faces = dets(gray)
+        # if len(faces) <= 0:
+        #     print("No face detected")
+        #     return None, False
+        # else:
+        #     return faces[0], True
+        return face.detect_face(img)
+        
+        
     
     def extract_bbox(self, usmp):
         contours = find_contours(usmp, 0.8)
@@ -230,11 +244,11 @@ class DataLoader:
         skel_2d = self.read_2d_skeleton(frame[3])
         face, success = self.crop_face(img, skel_2d)
         if success:
-            ld_features = self.desc.describe(rgb2gray(face))
+            lbp_face_features = self.desc.describe(rgb2gray(face))
         else:
-            ld_features = np.zeros(shape=(config.NUM_POINTS_LBP,))
+            lbp_face_features = (np.zeros(shape=(10,10)), np.zeros(shape=(config.NUM_POINTS_LBP,)))
         # ld_features = self.desc.describe(rgb2gray(face))# self.extract_landmark_features(face)
-        return img, skel_2d, self.read_3d_skeleton(frame[3]), self.read_lbp(frame[2], img), face, ld_features
+        return img, skel_2d, self.read_3d_skeleton(frame[3]), self.read_lbp(frame[2], img), face, lbp_face_features
     
     def iterate(self):
         for video in self.dataset:
@@ -247,31 +261,31 @@ class DataLoader:
         lbp_img = None
         rects = None
         face = None
+        face_lbp = None
         face_features = []
 
-        figure, axis = plt.subplots(1, 3,figsize=(18.5, 10.5), gridspec_kw={'width_ratios': [1, 0.3, 0.8]})
+        figure, axis = plt.subplots(1, 5,figsize=(18.5, 10.5), gridspec_kw={'width_ratios': [1, 0.3, 0.8, 1, 1]})
         
         # figure.set_size_inches(18.5, 10.5)
         points, = axis[0].plot([], [], 'ro')
         # face_points, = axis[3].plot([], [], 'ro')
         count = 0
-        for im, skel_2d, skel_3d, lbp, face_crop, ld in self.iterate():
+        for im, skel_2d, skel_3d, lbp, face_crop, (face_img_lbp, face_hist_lbp) in self.iterate():
             if count >= limit:
                 break
             points.set_data(skel_2d[0], skel_2d[1])
-            if ld is not None:
-                # fac_points.set_data(ld[:, 0], ld[:, 1])
-                pass
             for i, txt in enumerate(skel_2d[0]):
                 axis[0].annotate(i, (skel_2d[0][i], skel_2d[1][i]))
             if img is None:
                 img = axis[0].imshow(im)
                 lbp_img = axis[1].imshow(lbp[0])
-                # face = axis[3].imshow(face_crop)
+                face = axis[3].imshow(face_crop)
+                face_lbp = axis[4].imshow(face_img_lbp)
             else:
                 img.set_data(im)
                 lbp_img.set_data(lbp[0])
-                # face.set_data(face_crop)
+                face.set_data(face_crop)
+                face_lbp.set_data(face_img_lbp)
             hist = lbp[1]
             if rects is None:
                 rects = axis[2].bar([_ for _ in range(len(hist) - 1)], hist[:-1])
@@ -279,7 +293,7 @@ class DataLoader:
                 for rect,h in zip(rects,hist):
                     rect.set_height(h)
             plt.draw()
-            plt.pause(0.01)  
+            plt.pause(1)  
             count += 1
     
 
@@ -337,4 +351,4 @@ if __name__ == "__main__":
     d = DataLoader()
     d.read_dataset()
     d.shuffle_videos()
-    d.display_dataset()
+    d.display_dataset(limit=10)

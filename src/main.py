@@ -153,17 +153,9 @@ if __name__ == "__main__":
             plt.plot(y_test, skel_pred, 'o')
             plt.show()
 
-            # for idx, res in enumerate(zip(y_test, zip(skel_pred, clothes_pred, face_pred))):
-            #     fig, ax = plt.subplots(1, 2)
-            #     ax[0].imshow(im_test[idx])
-            #     ax[0].set_title("True label: " + str(bool(res[0])))
-            #     ax[1].imshow(im_train[1])
-            #     ax[1].set_title(str(res[1]))#"skel label: " + str(bool(res[1][0])), "clothes label: " + str(bool(res[1][1])), "face label: " + str(bool(res[1][2])))
-            #     print(res)
-            #     plt.show()
     
     if GENERATE_DATASET:
-        for i in range(0, 50):
+        for i in range(1, 50):
             for j in range(0, 2):
                 d.sample_dataset(video=i, return_images=True, file=f"v2_video_{i}_sample_{j}", seed=j)
 

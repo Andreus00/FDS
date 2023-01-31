@@ -2,6 +2,8 @@ from sklearn.model_selection import train_test_split
 import config
 import math
 import numpy as np
+from mediapipe.python.solutions import pose as mp_pose
+import cv2
 
 def filter_faces(X, y):
     X_face = []
@@ -30,3 +32,18 @@ def filter_and_split_dataset(X, y):
     y = np.array(y_train).flatten()
 
     return X_skel, X_clothes, X_face, X_skel_test, X_clothes_test, X_face_test, y_train, y_test, y_face, y_face_test
+
+
+def get_pose(img):
+    ret = None
+    success = False
+    with mp_pose.Pose() as pose_tracker:
+        result = pose_tracker.process(image=cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+        pose_landmarks = result.pose_landmarks
+        if pose_landmarks is not None:
+            ret = pose_landmarks
+            success = True
+    return ret, success
+
+        
+        

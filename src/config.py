@@ -1,4 +1,5 @@
-DATASET_PATH = "/media/andrea/20D2-63FB/Training/"
+DATASET_PATH = "/media/andrea/NVMe/Dataset/ReID/Training/"
+MARKET_PATH = "/media/andrea/NVMe/Dataset/Market-1501-v15.09.15/"
 MIN_FACE_OFFSET_X = -70
 MAX_FACE_OFFSET_X = 70
 MIN_FACE_OFFSET_Y = -100

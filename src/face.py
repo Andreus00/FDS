@@ -1,6 +1,10 @@
 import numpy as np
 import cv2
 import dlib
+import mediapipe as mp
+import utils
+
+mp_face_detection = mp.solutions.face_detection
 
 
 def crop_face(image, rects):
@@ -24,37 +28,55 @@ def crop_face(image, rects):
     return faces[0]
 
 
+def detect_face(img):
+    ret = None
+    with mp_face_detection.FaceDetection(model_selection=1, min_detection_confidence=0.5) as face_detection:
+        results = face_detection.process(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+        if not results.detections:
+            return None, False
+        # print(results.detections[0].location_data)
+        x_min = max(int(results.detections[0].location_data.relative_bounding_box.xmin * img.shape[1]), 0)
+        y_min = max(int(results.detections[0].location_data.relative_bounding_box.ymin * img.shape[0]), 0)
+        width = int(results.detections[0].location_data.relative_bounding_box.width * img.shape[1])
+        height = int(results.detections[0].location_data.relative_bounding_box.height * img.shape[0])
+        ret = img[y_min:y_min + height, x_min: x_min + width]
+    return ret, True
+
+
+
+
 
 #capture video from webcam
 cap = cv2.VideoCapture(0)
 
-detector = dlib.get_frontal_face_detector()
-predictor = dlib.shape_predictor("../shape_predictor_68_face_landmarks.dat")
+# detector = dlib.get_frontal_face_detector()
+# predictor = dlib.shape_predictor("../shape_predictor_68_face_landmarks.dat")
 
 while True:
     _, frame = cap.read()
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    faces = detector(gray)        
-    if len(faces) > 0:
-        faceWindow = crop_face(frame, faces)
-        faceWindow = cv2.resize(faceWindow, (250, 250))
-        gray = cv2.cvtColor(faceWindow, cv2.COLOR_BGR2GRAY)
-        face = detector(gray)
-        if len(face) > 0:
-            ld = predictor(gray, face[0])
-            for n in range(0, 68):
-                x = ld.part(n).x
-                y = ld.part(n).y
-                cv2.circle(faceWindow, (x, y), 4, (0, 255, 0), -1)
+    # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    # faces = detector(gray)   
+    face, success = detect_face(frame)
+    if success:
+        cv2.imshow("Face", face )
 
-        cv2.imshow("Face", faceWindow )
+    # for face in faces:
+    #     landmarks = predictor(gray, face)
+    #     for n in range(0, 68):
+    #         x = landmarks.part(n).x
+    #         y = landmarks.part(n).y
+    #         cv2.circle(frame, (x, y), 3, (255, 0, 0), -1)
 
-    for face in faces:
-        landmarks = predictor(gray, face)
-        for n in range(0, 68):
-            x = landmarks.part(n).x
-            y = landmarks.part(n).y
+    pose, success = utils.get_pose(frame)
+
+    if success:
+        for point in pose.landmark:
+            x = int(point.x * frame.shape[1])
+            y = int(point.y * frame.shape[0])
             cv2.circle(frame, (x, y), 3, (255, 0, 0), -1)
+
+        # exit()
+
     cv2.imshow("Frame", frame)
     key = cv2.waitKey(1)
     if key == 27:
